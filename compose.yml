@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16.2-alpine
+    environment:
+    # osのタイムゾーン
+      TZ: UTC
+      PGTZ: UTC
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    volumes:
+      - "./api/tmp/db:/var/lib/postgresql/data"
+
+  api:
+    build:
+      context: ./api
+      args:
+        WORKDIR: $WORKDIR
+    environment:
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+      RAILS_ENV: development  # Railsの環境変数を設定
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}  # 秘密キーを環境変数から読み込む
+    volumes:
+      - "./api:/$WORKDIR"
+    depends_on:
+      - db
+    ports:
+      - "$API_PORT:3000"
+
+  front:
+    build:
+      context: ./front
+      args:
+        WORKDIR: $WORKDIR
+    command: yarn run dev
+    volumes:
+      - ./front:/$WORKDIR
+    ports:
+      - "$FRONT_PORT:3000"
+    depends_on:
+      - api
